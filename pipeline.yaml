@@ -1,0 +1,30 @@
+pool:
+  vmImage: 'ubuntu-16.04'
+variables:
+  phpVersion: 7.2
+steps:
+- script: |
+    sudo update-alternatives --set php /usr/bin/php$(phpVersion)
+    sudo update-alternatives --set phar /usr/bin/phar$(phpVersion)
+    sudo update-alternatives --set phpdbg /usr/bin/phpdbg$(phpVersion)
+    sudo update-alternatives --set php-cgi /usr/bin/php-cgi$(phpVersion)
+    sudo update-alternatives --set phar.phar /usr/bin/phar.phar$(phpVersion)
+    php -version
+  displayName: 'Use PHP version $(phpVersion)'
+- script: |
+    composer self-update
+    composer dump-autoload
+    composer install --no-interaction --prefer-dist
+  displayName: 'Install Composer'
+- script: './vendor/bin/phpunit --log-junit TEST-RESULTS.xml'
+  displayName: 'Run tests with phpunit'
+- task: PublishTestResults@2
+  inputs:
+    testRunner: 'JUnit'
+    testResultsFiles: '**/TEST-*.xml'
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(system.defaultWorkingDirectory)'
+    includeRootFolder: false
+    
+- task: PublishBuildArtifacts@1
